@@ -354,3 +354,32 @@ class DirectionObsWrapper(gym.core.ObservationWrapper):
         slope = np.divide( self.goal_position[1] - self.agent_pos[1] ,  self.goal_position[0] - self.agent_pos[0])
         obs['goal_direction'] = np.arctan( slope ) if self.type == 'angle' else slope
         return obs
+
+class HammerObsWrapper(gym.core.ObservationWrapper):
+    """
+    Hammer observable gridworld using a compact grid encoding
+    """
+    def __init__(self, env):
+        super().__init__(env)
+        self.observation_space.spaces["image"] = env.observation_space.spaces['image']
+        self.observation_space.spaces["hammer_image"] = spaces.Box(
+            low=0,
+            high=255,
+            shape=(self.env.width, self.env.height, 3),  # number of cells
+            dtype='uint8'
+        )
+
+    def observation(self, obs):
+        env = self.unwrapped
+        full_grid = env.grid.encode()
+        full_grid[env.agent_pos[0]][env.agent_pos[1]] = np.array([
+            OBJECT_TO_IDX['agent'],
+            COLOR_TO_IDX['red'],
+            env.agent_dir
+        ])
+
+        return {
+            'hammer_image': full_grid,
+            # 'hammer_image': obs["image"],
+            'image': obs["image"]
+        }
